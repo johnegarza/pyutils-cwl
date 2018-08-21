@@ -1,10 +1,12 @@
 import subprocess
+import pdb
 
 class WorkflowObject:
     def __init__(self, path):
         self.path = path
         self.upstream = []
         self.downstream = []
+        self.docker_image = None
 
 def path_resolver(parent_path, downstream_relative_path): 
     parsed_parent = parent_path.split("/")
@@ -31,14 +33,27 @@ def print_hierarchy(cwl):
 
 def print_hierarchy_kernel(cwl, index, depth):
 
+    #pdb.set_trace()
+
     if index >= len(cwl.downstream):
         return
 
+    '''
     tabs = "\t" * depth
     print(tabs + cwl.downstream[index].path)
+    '''
+    path = "\t" * depth + cwl.downstream[index].path
+    if cwl.downstream[index].docker_image is not None:
+        #print("hit")
+        path += "\t" + cwl.downstream[index].docker_image
+        path += "-------------"
+    print(path)
 
     print_hierarchy_kernel(cwl.downstream[index], 0, depth+1)
     print_hierarchy_kernel(cwl, index+1, depth)
+
+
+
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
@@ -61,13 +76,17 @@ for cwl in cwls:
                 parent_obj.downstream.append(downstream_obj)
                 downstream_obj.upstream.append(parent_obj)
 
-'''
-print("Top level workflows:")
-for cwl in path_to_object:
-    obj = path_to_object[cwl]
-    if len(obj.upstream) == 0:
-        print(obj.path)
-'''
+            elif line.startswith("dockerPull: "):
+                image = line[12:]
+                print("image: " + image)
+                cwl_obj = path_to_object[cwl]
+                cwl_obj.docker_image = image
+                print(cwl_obj.docker_image)
+
+for thing in path_to_object:
+    if path_to_object[thing].docker_image is not None:
+        print(path_to_object[thing].path)
+
 
 print_hierarchy(path_to_object["./exome_workflow.cwl"])
 
