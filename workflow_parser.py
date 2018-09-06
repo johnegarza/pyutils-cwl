@@ -46,9 +46,6 @@ def print_hierarchy_kernel(cwl, index, depth):
 
 def docker_updater(old_image, new_image):
 
-    #since cwl requires image names to be surrounded by quotes
-    #new_image = "\"" + new_image + "\""
-
     #docker_files = [cwl.path for cwl in path_to_object.values() if cwl.docker_image == old_image]
 
     docker_files = [] #hold paths to the files that will have their docker images updated
@@ -57,7 +54,10 @@ def docker_updater(old_image, new_image):
             cwl.docker_image = new_image #update the image in internal representation
             docker_files.append(cwl.path) 
 
-    for line in fileinput.input(docker_files, inplace=1):
+    #adapted from https://stackoverflow.com/questions/125703/how-to-modify-a-text-file
+    #and https://stackoverflow.com/questions/17140886/how-to-search-and-replace-text-in-a-file-using-python/20593644#20593644
+    for line in fileinput.FileInput(docker_files, inplace = True):
+        #used write instead of print to avoid adding in newline without using a version specific workaround
         sys.stdout.write(line.replace(old_image, new_image))
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
