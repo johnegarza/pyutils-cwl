@@ -49,9 +49,13 @@ def docker_updater(old_image, new_image):
     #since cwl requires image names to be surrounded by quotes
     #new_image = "\"" + new_image + "\""
 
-    docker_files = [cwl.path for cwl in path_to_object.values() if cwl.docker_image == old_image]
+    #docker_files = [cwl.path for cwl in path_to_object.values() if cwl.docker_image == old_image]
 
-    #TODO update cwl.path to new_image
+    docker_files = [] #hold paths to the files that will have their docker images updated
+    for cwl in path_to_object.values():
+        if cwl.docker_image == old_image:
+            cwl.docker_image = new_image #update the image in internal representation
+            docker_files.append(cwl.path) 
 
     for line in fileinput.input(docker_files, inplace=1):
         sys.stdout.write(line.replace(old_image, new_image))
