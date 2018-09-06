@@ -1,5 +1,5 @@
-import subprocess
-import pdb
+import subprocess, sys, fileinput
+#import pdb
 
 class WorkflowObject:
     def __init__(self, path):
@@ -44,8 +44,17 @@ def print_hierarchy_kernel(cwl, index, depth):
     print_hierarchy_kernel(cwl.downstream[index], 0, depth + 1)
     print_hierarchy_kernel(cwl, index + 1, depth)
 
+def docker_updater(old_image, new_image):
 
+    #since cwl requires image names to be surrounded by quotes
+    #new_image = "\"" + new_image + "\""
 
+    docker_files = [cwl.path for cwl in path_to_object.values() if cwl.docker_image == old_image]
+
+    #TODO update cwl.path to new_image
+
+    for line in fileinput.input(docker_files, inplace=1):
+        sys.stdout.write(line.replace(old_image, new_image))
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
@@ -69,10 +78,11 @@ for cwl in cwls:
                 downstream_obj.upstream.append(parent_obj)
 
             elif line.startswith("dockerPull: "):
-                image = line[12:]
+                image = line[12:].strip("\"")
                 cwl_obj = path_to_object[cwl]
                 cwl_obj.docker_image = image
 
+docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
 print_hierarchy(path_to_object["./exome_workflow.cwl"])
 
 
