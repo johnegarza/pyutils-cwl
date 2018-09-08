@@ -1,4 +1,4 @@
-import subprocess, sys, fileinput
+import subprocess, sys, fileinput, re
 #import pdb
 
 class WorkflowObject:
@@ -54,11 +54,51 @@ def docker_updater(old_image, new_image):
             cwl.docker_image = new_image #update the image in internal representation
             docker_files.append(cwl.path) 
 
+    if not docker_files:
+        pass
+        #TODO implement some sort of warning or error handling- no matching files were found
+
+
     #adapted from https://stackoverflow.com/questions/125703/how-to-modify-a-text-file
     #and https://stackoverflow.com/questions/17140886/how-to-search-and-replace-text-in-a-file-using-python/20593644#20593644
     for line in fileinput.FileInput(docker_files, inplace = True):
         #used write instead of print to avoid adding in newline without using a version specific workaround
         sys.stdout.write(line.replace(old_image, new_image))
+
+def propogate_argument(cwl_path, arg_name):
+
+    arg_name += ":"
+
+    argument = []
+    leading_spaces = 0
+    found_arg = False
+
+    print("here")
+
+    #grab the argument definition from the tool file
+    with open(cwl_path) as contents:
+        print("opened")
+        for num, line in enumerate(contents.readlines()):
+            #print line.strip() + "\t" + arg_name
+            if line.strip() == arg_name and not found_arg: #TODO evaluate necessity of !found_arg
+                argument.append(line)
+                leading_spaces = line.rstrip().count(' ')
+                found_arg = True
+                print("hit")
+            elif found_arg:
+                print("hit2")
+                #at this point, we've already found and are capturing the lines describing the desired argument
+                #so if we find a word at the same indentation level, it must be another arg, so stop capture
+                if re.match("[\w]+:", line[leading_spaces:]) is not None: 
+                    break
+                else:
+                    argument.append(line)
+
+    if not argument:
+        pass
+        #TODO implement some sort of warning or error handling- argument was not found
+
+    print argument
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
@@ -86,9 +126,9 @@ for cwl in cwls:
                 cwl_obj = path_to_object[cwl]
                 cwl_obj.docker_image = image
 
-docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
-print_hierarchy(path_to_object["./exome_workflow.cwl"])
-
+#docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
+#print_hierarchy(path_to_object["./exome_workflow.cwl"])
+propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "readgroup")
 
 
 
