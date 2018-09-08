@@ -121,10 +121,14 @@ def propogate_argument(cwl_path, arg_name):
     #################
 
     cwl = path_to_object[cwl_path]
-    #while cwl.upstream is not None:
-        #for line in fileinput.FileInput(cwl.path, inplace=True):
+    while cwl.upstream is not None:
+        for line in fileinput.FileInput(cwl.path, inplace=True):
+            if line.strip() == "inputs":
+                sys.stdout.write(line)
+                arg_string = ''.join(filtered_arguments)
+                sys.stdout.write(arg_string)
 
-        #cwl = cwl.upstream[0] #TODO FOR BASIC TESTING ONLY IMPLEMENT LEAF-TO-ROOT WALK IN PRODUCTION
+        cwl = cwl.upstream[0] #TODO FOR BASIC TESTING ONLY IMPLEMENT LEAF-TO-ROOT WALK IN PRODUCTION
     
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
@@ -155,7 +159,7 @@ for cwl in cwls:
 
 #docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
 #print_hierarchy(path_to_object["./exome_workflow.cwl"])
-propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "readgroup")
+propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "tester")
 
 
 
