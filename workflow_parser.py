@@ -67,28 +67,27 @@ def docker_updater(old_image, new_image):
 
 def propogate_argument(cwl_path, arg_name):
 
+    ###############
+    ### CAPTURE ###
+    ###############
+
     arg_name += ":"
 
     argument = []
     leading_spaces = 0
     found_arg = False
 
-    print("here")
-
     #grab the argument definition from the tool file
     with open(cwl_path) as contents:
-        print("opened")
         for num, line in enumerate(contents.readlines()):
             #print line.strip() + "\t" + arg_name
             if line.strip() == arg_name and not found_arg: #TODO evaluate necessity of !found_arg
                 argument.append(line)
                 leading_spaces = line.rstrip().count(' ')
                 found_arg = True
-                print("hit")
             elif found_arg:
-                print("hit2")
                 #at this point, we've already found and are capturing the lines describing the desired argument
-                #so if we find a word at the same indentation level, it must be another arg, so stop capture
+                #if we find a word at the same indentation level, it must be another arg, so stop capture
                 if re.match("[\w]+:", line[leading_spaces:]) is not None: 
                     break
                 else:
@@ -98,7 +97,35 @@ def propogate_argument(cwl_path, arg_name):
         pass
         #TODO implement some sort of warning or error handling- argument was not found
 
-    print argument
+    print ''.join(argument)
+
+    filtering = False
+    filtered_argument = []
+    for line in argument:
+        if line.strip() == "inputBinding:" and not filtering:
+            leading_spaces = line.rstrip().count(' ')
+            filtering = True
+            continue
+
+        if filtering:
+            if re.match("[\w]+:", line[leading_spaces:]) is not None:
+                filtering = False
+        if not filtering:
+            filtered_argument.append(line)
+
+    print("filtered")
+    print ''.join(filtered_argument)
+
+    #################
+    ### PROPOGATE ###
+    #################
+
+    cwl = path_to_object[cwl_path]
+    #while cwl.upstream is not None:
+        #for line in fileinput.FileInput(cwl.path, inplace=True):
+
+        #cwl = cwl.upstream[0] #TODO FOR BASIC TESTING ONLY IMPLEMENT LEAF-TO-ROOT WALK IN PRODUCTION
+    
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
