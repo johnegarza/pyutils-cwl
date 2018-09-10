@@ -122,16 +122,43 @@ def propogate_argument(cwl_path, arg_name):
 
     cwl = path_to_object[cwl_path]
     dups = set()
+    dups.add(cwl)
 
+
+    #TODO control flow and logic is spaghetti but I have a deadline- fix ASAP
     def walk(cwl_file, index, dups):
 
+        arg_search = False #track if we've entered the section where we should be searching (input section)
+        found_arg = False #track if we've found the argument in the file already, which must be overwritten
+        leading_spaces = 0
+        arg_string = ''.join(filtered_argument)
         if cwl_file not in dups:
             for line in fileinput.FileInput(cwl_file.path, inplace=True):
             
                 if line.strip() == "inputs:":
                     sys.stdout.write(line)
-                    arg_string = ''.join(filtered_argument)
-                    sys.stdout.write(arg_string)
+                    #sys.stdout.write(arg_string)
+                    arg_search = True
+                elif arg_search: #we're in the inputs section
+                    if line.strip() == arg_name:
+                        found_arg = True
+                        leading_spaces = line.rstrip().count(' ')
+                        #no explicit write because we want to remove these lines, to be replaced later with the newer version
+                    elif found_arg: #actively overwriting outdated argument
+                        if re.match("[\w]+:", line[leading_spaces:]) is not None:
+                            #in this case, we have found the next argument-
+                            #so dump the new/updated argument, then update flags to skip this block next time
+                            sys.stdout.write(arg_string)
+                            sys.stdout.write(line)
+                            arg_search = found_arg = False
+                        #else, do nothing- with no explicit write, this deletes the old/outdated argument
+                    elif line == line.lstrip(): #this will match top level lines
+                        #in this case, we are leaving the inputs section but haven't written out the new argument
+                        sys.stdout.write(arg_string)
+                        sys.stdout.write(line)
+                        arg_search = found_arg = False
+                    else:
+                        sys.stdout.write(line)
                 else:
                     #necessary because the above line.strip() check
                     #removes the line from the file
