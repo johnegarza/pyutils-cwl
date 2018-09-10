@@ -97,7 +97,7 @@ def propogate_argument(cwl_path, arg_name):
         pass
         #TODO implement some sort of warning or error handling- argument was not found
 
-    print ''.join(argument)
+    #print ''.join(argument)
 
     filtering = False
     filtered_argument = []
@@ -113,23 +113,39 @@ def propogate_argument(cwl_path, arg_name):
         if not filtering:
             filtered_argument.append(line)
 
-    print("filtered")
-    print ''.join(filtered_argument)
+    #print("filtered")
+    #print ''.join(filtered_argument)
 
     #################
     ### PROPOGATE ###
     #################
 
     cwl = path_to_object[cwl_path]
-    while cwl.upstream is not None:
-        for line in fileinput.FileInput(cwl.path, inplace=True):
-            if line.strip() == "inputs":
-                sys.stdout.write(line)
-                arg_string = ''.join(filtered_arguments)
-                sys.stdout.write(arg_string)
+    dups = set()
 
-        cwl = cwl.upstream[0] #TODO FOR BASIC TESTING ONLY IMPLEMENT LEAF-TO-ROOT WALK IN PRODUCTION
-    
+    def walk(cwl_file, index, dups):
+
+        if cwl_file not in dups:
+            for line in fileinput.FileInput(cwl_file.path, inplace=True):
+            
+                if line.strip() == "inputs:":
+                    sys.stdout.write(line)
+                    arg_string = ''.join(filtered_argument)
+                    sys.stdout.write(arg_string)
+                else:
+                    #necessary because the above line.strip() check
+                    #removes the line from the file
+                    sys.stdout.write(line)
+
+            dups.add(cwl_file)
+
+        if index >= len(cwl_file.upstream):
+            return
+
+        walk(cwl_file.upstream[index], 0, dups)
+        walk(cwl_file, index + 1, dups)
+
+    walk(cwl, 0, dups)
 
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
