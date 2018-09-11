@@ -215,7 +215,14 @@ for cwl in cwls:
 
 #docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
 #print_hierarchy(path_to_object["./exome_workflow.cwl"])
-propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "tester")
+#propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "tester")
 
+top_levels = set()
 
+for cwl in path_to_object.values():
+    if not cwl.upstream:
+        top_levels.add(cwl)
+
+for thing in top_levels:
+    print_hierarchy(thing)
 
