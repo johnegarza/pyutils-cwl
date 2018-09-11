@@ -174,6 +174,9 @@ def propogate_argument(cwl_path, arg_name):
 
     walk(cwl, 0, dups)
 
+#TODO wrap the following portion in if __name-- == "__main__"
+#refactor and check scope on all variables when apply this update
+
 cwls = subprocess.check_output(['find', '.', '-name', '*\.cwl']).split("\n") #create a list of paths to all cwl files
 del cwls[-1] #last element is always the empty string, so remove it
 
@@ -182,6 +185,7 @@ for cwl in cwls:
     path_to_object[cwl] = WorkflowObject(cwl)
 
 for cwl in cwls:
+    input_mapping_capture = False
     with open(cwl) as contents:
         lines = contents.readlines() #create a list of lines in the cwl file
         lines = [x.strip() for x in lines] #remove whitespace from the beginning and end of each line
@@ -195,10 +199,19 @@ for cwl in cwls:
                 parent_obj.downstream.append(downstream_obj)
                 downstream_obj.upstream.append(parent_obj)
 
+                input_mapping_capture = True
+
             elif line.startswith("dockerPull: "):
                 image = line[12:].strip("\"")
                 cwl_obj = path_to_object[cwl]
                 cwl_obj.docker_image = image
+            elif input_mapping_capture:
+                if line.startswith("in:"):
+                    continue #nothing to do here
+                elif line.startswith("out:"):
+                    input_mapping_capture = False
+                else:
+                    pass #TODO implement parsing
 
 #docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
 #print_hierarchy(path_to_object["./exome_workflow.cwl"])
