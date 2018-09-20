@@ -174,6 +174,15 @@ def propogate_argument(cwl_path, arg_name):
 
     walk(cwl, 0, dups)
 
+def upstreams(cwl_file, index, dups):
+    if cwl_file not in dups:
+        print(cwl_file.path)
+        dups.add(cwl_file)
+    if index >= len(cwl_file.upstream):
+        return
+    upstreams(cwl_file.upstream[index], 0, dups)
+    upstreams(cwl_file, index + 1, dups)
+
 #TODO wrap the following portion in if __name-- == "__main__"
 #refactor and check scope on all variables when apply this update
 
@@ -214,9 +223,10 @@ for cwl in cwls:
                     pass #TODO implement parsing
 
 #docker_updater("mgibio/samtools-cwl:1.0.0", "testing")
-#print_hierarchy(path_to_object["./exome_workflow.cwl"])
+print_hierarchy(path_to_object["./definitions/pipelines/exome.cwl"])
 #propogate_argument("./unaligned_bam_to_bqsr/align_and_tag.cwl", "tester")
 
+'''
 top_levels = set()
 
 for cwl in path_to_object.values():
@@ -225,4 +235,10 @@ for cwl in path_to_object.values():
 
 for thing in top_levels:
     print_hierarchy(thing)
+'''
 
+'''
+dups = set()
+trans_file = path_to_object[sys.argv[1]]
+upstreams(trans_file, 0, dups)
+'''
